@@ -84,7 +84,7 @@ const json = (res) => {
 };
 
 /** Load the plugin with a stub network, against a throwaway DSH home. */
-async function loadPlugin(root) {
+async function loadPlugin(root, options = {}) {
   const dir = fs.mkdtempSync(path.join(root, 'plug-'));
   fs.cpSync(path.join(__dirname, '..', 'lib'), path.join(dir, 'lib'), { recursive: true });
   fs.copyFileSync(path.join(__dirname, '..', 'cordis.patch.yml'),
@@ -99,6 +99,28 @@ async function loadPlugin(root) {
   const osModule = require('node:os');
   const real = osModule.networkInterfaces;
   osModule.networkInterfaces = () => fixture;
+
+  // The Tailscale policy shells out to the CLI. Stubbed so these tests are deterministic: the real
+  // answer depends on whoever runs them having Tailscale installed *and* a tailnet with the right
+  // nodes, which is exactly the kind of test that passes on one machine and fails on the next.
+  const cpModule = require('node:child_process');
+  const realExec = cpModule.execFileSync;
+  const whoisByAddress = options.whois ?? {};
+  const selfUserId = options.selfUserId ?? null;
+  cpModule.execFileSync = (file, args) => {
+    if (file !== 'tailscale') return realExec(file, args);
+    if (args[0] === 'status') {
+      if (selfUserId === null) throw new Error('tailscale not running');
+      return JSON.stringify({ Self: { UserID: selfUserId } });
+    }
+    if (args[0] === 'whois') {
+      const address = args[args.length - 1];
+      const node = whoisByAddress[address];
+      if (node === undefined) throw new Error('peer not found');
+      return JSON.stringify({ Node: node });
+    }
+    throw new Error('unexpected tailscale invocation: ' + args.join(' '));
+  };
   require('node:module').syncBuiltinESMExports();
 
   const routes = new Map();
@@ -146,6 +168,7 @@ async function loadPlugin(root) {
         } catch { /* a disposer that throws must not fail the run */ }
       }
       osModule.networkInterfaces = real;
+      cpModule.execFileSync = realExec;
       require('node:module').syncBuiltinESMExports();
     }
   };
