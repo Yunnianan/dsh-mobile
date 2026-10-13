@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const require = createRequire(import.meta.url);
-const plugin = await import('../lib/index.js');
+const plugin = await import('./lib/index.js');
 
 let failures = 0;
 const check = (label, ok, extra = '') => {
@@ -227,9 +227,22 @@ if (getCode) {
     check('pairingUrl points at the pairing route', code.pairingUrl.includes('/m/pair?t='),
           code.pairingUrl.replace(/\?.*$/, ''));
   }
-  // Tailscale is now preferred over LAN because it works on any network at
-  // comparable speed. Assert the preference, not a fixed answer, so this still
-  // holds on a machine with no Tailscale.
+  // The address to lead with is LAN, then Tailscale, then the tunnel.
+  //
+  // This assertion used to require a 100.64/10 host whenever Tailscale was present, because that
+  // was the old policy. The policy was reversed after a real failure: a phone whose Tailscale was
+  // not connected received an unusable Tailscale address as primary while a working LAN address sat
+  // in the fallback slot, and the app reported "LAN does not work". So the test now asserts the
+  // *order* — a LAN address leads when one exists, and the other address still travels with the
+  // link — rather than a fixed answer, which keeps it valid on a machine with no Tailscale.
+  if (code?.scope === 'lan') {
+    check('a LAN address leads when one is available',
+          /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(String(code.host ?? '')),
+          String(code.host));
+    const alt = code.tailscaleUrl ?? code.publicUrl;
+    check('the other reachable address is still reported alongside',
+          Boolean(alt), String(alt));
+  }
   if (code?.scope === 'tailscale') {
     check('tailscale scope reports a 100.64/10 host',
           /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(String(code.host ?? '')),
