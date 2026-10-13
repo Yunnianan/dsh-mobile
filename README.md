@@ -17,9 +17,13 @@
 
 **手机端 APK**：从 [`dist/`](dist) 取最新版本，或看 [Releases](../../releases)。
 
+**Tailscale APK（国内上不了 Google Play 时用）**：[Releases](../../releases) 里附了一份官方
+Android 安装包的镜像，插件的安装引导按钮**直接指向它**，手机上点一下就能下载安装。来源、版本与
+SHA-256 见 [Tailscale APK 镜像说明](features/TAILSCALE-APK.md)。
+
 | 版本 | 文件 | 大小 | SHA-256（前 16 位） |
 |---|---|---|---|
-| 10.8 | [`dist/dsh-mobile-10.8.apk`](dist/dsh-mobile-10.8.apk) | 413.4 KB | `30DDE06C70018D8E` |
+| 11.2 | [`dist/dsh-mobile-11.2.apk`](dist/dsh-mobile-11.2.apk) | 413.4 KB | `1F2223ED660EA9D5` |
 
 APK 是自签名应用，覆盖安装即可升级（签名指纹见文末），**配对状态保留**。
 
