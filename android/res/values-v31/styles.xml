@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The system's launch window on Android 12 (API 31) and later.
+
+     Why this exists separately from `values/styles.xml`: the launch-window attributes are API 31+,
+     and referencing them from a base theme would leave them unread on older platforms.
+
+     Why it repeats `windowBackground` from `values-v27/styles.xml`: resource qualifiers pick the
+     single best match, not a merge. A v31 style replaces the v27 one wholesale on API 31+, so
+     anything omitted here would be dropped on exactly the devices this file targets — the light
+     window background behind the system bars would disappear, and the page's top edge would come
+     back as a black strip.
+
+     What it fixes: a cold start showed a **plain black window** for the few hundred milliseconds
+     before the activity could draw. The app has its own splash (SplashView), but that cannot appear
+     until the activity is created, measured and laid out — the gap before it is the system's to
+     fill, and by default it fills it with nothing. Registering the launcher icon here puts the mark
+     on screen at process start, so the first frame the user sees is the app's own icon.
+
+     `windowSplashScreenAnimatedIcon` takes the same bitmap the launcher uses, so the icon shown
+     here is the icon on the home screen — no second artwork to keep in sync.
+     `windowSplashScreenIconBackgroundColor` is deliberately left unset: the icon already carries
+     its navy plate (baked in, because vivo's launcher ignores adaptive icons), and adding a plate
+     behind a plate reads as a ring. -->
+<resources>
+    <style name="AppTheme" parent="@style/AppThemeBase">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:windowSplashScreenBackground">@color/launch_window_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="android:windowSplashScreenAnimationDuration">250</item>
+    </style>
+</resources>

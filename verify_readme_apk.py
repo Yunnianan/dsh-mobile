@@ -5,7 +5,7 @@ updated while the size and SHA-256 next to it were left behind, which is worse t
 数字 at all — a reader who verifies a download against a stale hash concludes the file is
 tampered with.
 
-Run before every push:
+Run before every push (from the repository root):
 
     python verify_readme_apk.py
 """
@@ -15,11 +15,17 @@ import os
 import re
 import sys
 
-REPO = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'repo')
+# This script now lives *in* the repository it checks, so the repository root is
+# the script's own directory. It previously resolved `repo/` beneath itself,
+# which only worked while the script sat in a parent staging folder and broke the
+# moment it moved in with the code it verifies.
+REPO = os.path.dirname(os.path.abspath(__file__))
 README = os.path.join(REPO, 'README.md')
 DIST = os.path.join(REPO, 'dist')
 
-ROW = re.compile(r'\|\s*(\d+\.\d+)\s*\|\s*\[`dist/([^`]+)`\][^|]*\|\s*([\d.]+\s*KB)\s*\|\s*`([0-9A-Fa-f]{8,})`\s*\|')
+# Version | link to the file | size | hash, with any further columns (e.g. a
+# change note) ignored so the table can grow without breaking this check.
+ROW = re.compile(r'\|\s*(\d+\.\d+(?:\.\d+)?)\s*\|\s*\[`dist/([^`]+)`\][^|]*\|\s*([\d.]+\s*KB)\s*\|\s*`([0-9A-Fa-f]{8,})`\s*\|')
 
 
 def main():

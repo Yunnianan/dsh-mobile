@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <SurfaceView
+        android:id="@+id/preview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- A simple framing hint; the decoder scans the whole frame, so this is
+         guidance rather than a hard crop. -->
+    <View
+        android:id="@+id/reticle"
+        android:layout_width="260dp"
+        android:layout_height="260dp"
+        android:layout_gravity="center"
+        android:background="@android:color/transparent" />
+
+    <TextView
+        android:id="@+id/scanHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal|bottom"
+        android:layout_marginBottom="48dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:background="#99000000"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:text="@string/scan_hint" />
+
+    <!-- Decoding a picture is the path for a QR that only exists as an image: a
+         screenshot of the panel, or a link someone sent. It sits under the hint
+         because the camera is still the primary route. Uses the system photo
+         picker, so it needs no storage permission and no camera-independent setup. -->
+    <Button
+        android:id="@+id/pickImageBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal|bottom"
+        android:layout_marginBottom="8dp"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:text="@string/scan_pick_image" />
+</FrameLayout>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark-theme overrides for the shell theme, i.e. what changes when the system is dark.
+
+     The status bar icons flip to light: the base theme asks for dark icons, which on a dark
+     page would be dark marks on a dark bar. The navigation bar follows for the same reason. -->
+<resources>
+    <style name="AppThemeBase" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowAnimationStyle">@style/AppWindowAnimation</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

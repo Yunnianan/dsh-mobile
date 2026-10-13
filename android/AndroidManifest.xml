@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.dshmobile.app"
+    android:versionCode="140"
+    android:versionName="16.9.1">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Package visibility, required from Android 11 (API 30) to look up another app.
+         Without this, `getPackageInfo("com.tailscale.ipn")` throws regardless of whether Tailscale
+         is installed, so the app would always claim it is missing. Declared narrowly, for that one
+         package, rather than asking to see everything. -->
+    <queries>
+        <package android:name="com.tailscale.ipn" />
+    </queries>
+    <!-- Scanning happens in-process (ScanActivity + vendored zxing-core), so the
+         app owns the camera permission instead of delegating to a scanner app.
+         An earlier revision fired a com.google.zxing.client.android.SCAN intent,
+         which no installed app could handle. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+    <!-- Adreno-class GPUs on current flagships (Snapdragon 8 Elite Gen 5) expose
+         Vulkan; the system WebView uses it for compositing when present. Declared
+         optional so devices without it still install. -->
+    <uses-feature android:name="android.hardware.vulkan.version" android:required="false" />
+    <uses-feature android:name="android.hardware.vulkan.level" android:version="0" android:required="false" />
+    <!-- Touch targeting is asserted by WebView content regardless of hardware. -->
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <!-- Package visibility, required from Android 11. Without a matching <queries>, asking the
+         PackageManager about another app is answered with NameNotFoundException even when that app
+         is installed. The first-run guide uses this to skip the Tailscale step on a device that
+         already has it, so a missing declaration made the app claim Tailscale was absent on a phone
+         that had it installed the whole time. -->
+    <queries>
+        <package android:name="com.tailscale.ipn" />
+    </queries>
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
+        android:hardwareAccelerated="true"
+        android:supportsRtl="true"
+        android:largeHeap="true"
+        android:extractNativeLibs="false"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:preferMinimalPostProcessing="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|uiMode"
+            android:enableOnBackInvokedCallback="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- singleTask keeps one instance. As `standard` a deep link arriving while the
+                 app was already running produced a second instance, and both instances ran
+                 their own connect/auto-pair cycle — observed as repeated probe/load rounds
+                 and repeated token mints that invalidated each other. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Allows a QR scanner to hand a pairing link straight to this app. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="dshmobile" />
+            </intent-filter>
+            <!-- Pairing links arrive as ordinary http URLs (`http://host:port/m/pair?t=…`), and
+                 without a filter for that shape the system hands them to the browser, which cannot
+                 complete a pairing — the app is never reached. That is fine for a QR scan, where the
+                 scanner parses the link itself and fires it at the component, but it breaks every
+                 hand-off that goes through the system: a link pasted into a chat, a link opened from
+                 the desktop panel, a link pushed with `am start`.
+                 Deliberately narrowed to the pairing path rather than claiming all http(s) traffic:
+                 only `/m/` links belong to this app, and a browser is still the right answer for
+                 everything else. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" android:host="*" android:pathPrefix="/m/" />
+                <data android:scheme="https" android:host="*" android:pathPrefix="/m/" />
+            </intent-filter>
+        </activity>
+
+        <!-- In-app QR scanner; not exported, so only this app can launch it. -->
+        <activity
+            android:name=".ScanActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|uiMode"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen" />
+    </application>
+</manifest>
+
+

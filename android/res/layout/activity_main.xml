@@ -1,0 +1,697 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Insets are applied programmatically on android.R.id.content in MainActivity
+     (see the comment there), so this root deliberately does not use
+     android:fitsSystemWindows.
+
+     Four screens share this FrameLayout and are shown one at a time:
+       pairingPanel  the way in: scan a code, or type an address
+       ipPanel       the address path, kept on its own so it stays one decision
+       configPanel   the full connection settings (also reached from the page's top bar)
+       webPanel      the DSH page itself
+     Order matters: later children draw on top, so the overview screens come after the page
+     and the overlays come last. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Screen 1: the way in. Deliberately just two choices, because the connection settings
+         behind them are long and most people never need them. -->
+    <LinearLayout
+        android:id="@+id/pairingPanel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:padding="28dp">
+
+        <ImageView
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_gravity="center_horizontal"
+            android:contentDescription="@string/app_name"
+            android:src="@mipmap/ic_launcher" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="14dp"
+            android:text="@string/app_name"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="26dp"
+            android:alpha="1.0"
+            android:gravity="center_horizontal"
+            android:text="@string/pairing_intro"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:alpha="1.0"
+            android:text="@string/pairing_choose"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/pairScanBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:minHeight="60dp"
+            android:text="@string/pair_scan"
+            android:textSize="16sp" />
+
+        <!-- Second entry on the pairing menu. Tailscale gets its own button because it is the only
+             path that works from outside the house: the host recognises the device by its tailnet
+             identity, so no QR code, no key and no click on the desktop are needed. The manual
+             address screen is still reachable — this button opens it when there is no Tailscale
+             address stored yet, since otherwise nothing on this screen could configure one. -->
+        <Button
+            android:id="@+id/pairTailscaleBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="60dp"
+            android:text="@string/pair_tailscale"
+            android:textSize="16sp" />
+
+        <!-- The shortcut nobody should have to find, but that saves the most typing: it finds
+             the host on this network and fills everything in. -->
+        <Button
+            android:id="@+id/discoverBtn"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:minHeight="48dp"
+            android:text="@string/discover"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/discoverText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:alpha="1.0"
+            android:gravity="center_horizontal"
+            android:textSize="12sp" />
+
+        <!-- No separate Tailscale link here any more: the 「Tailscale 配对」 button above *is* the
+             way in, and it shows the install instructions before it pairs. Two entries to the same
+             place only made the menu look like it had more choices than it does. -->
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:alpha="1.0"
+            android:gravity="center_horizontal"
+            android:textSize="13sp" />
+
+        <!-- Manual entry, always available.
+             It used to be reachable only as a consequence of a failed automatic attempt — the Tailscale
+             button opened it when it found no stored address, and nothing else did. So a user who
+             already had the address in hand, or whose Tailscale could not be reached at all, had no way
+             to type it: 「现在我没法进入手动连接的界面啊」. Pairing is the screen where every way in
+             should be listed, including the one that asks for nothing but an address. -->
+        <Button
+            android:id="@+id/pairingManualBtn"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:minHeight="48dp"
+            android:text="@string/pair_manual"
+            android:textSize="14sp" />
+
+        <!-- The display and storage options are not pairing, so they are not on the menu itself. They
+             stay one tap away rather than being dropped: this screen is what the page's gear opens, and
+             without this button those settings would have no entry point from a connected session. -->
+        <Button
+            android:id="@+id/pairingDisplayBtn"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:minHeight="48dp"
+            android:text="@string/pairing_display"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- Screen 2: the address path. One field to fill, plus the two shortcuts that exist so
+         it does not have to be typed at all. -->
+    <ScrollView
+        android:id="@+id/ipPanel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="28dp">
+
+            <Button
+                android:id="@+id/ipBackBtn"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/pair_back"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/ip_title"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:alpha="1.0"
+                android:text="@string/ip_hint"
+                android:textSize="13sp" />
+
+            <EditText
+                android:id="@+id/urlInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:hint="@string/hint_url"
+                android:importantForAutofill="no"
+                android:inputType="textUri"
+                android:singleLine="true" />
+
+            <!-- Tailscale status and the way into its app.
+                 Shown only while pairing over Tailscale, and only when the tunnel is off: the
+                 address cannot work without it, and a user away from home has no other reason to go
+                 looking for an app they installed once. Opening it from here removes the step of
+                 finding the icon. -->
+            <TextView
+                android:id="@+id/tailscaleState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/openTailscaleBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:minHeight="48dp"
+                android:text="@string/open_tailscale"
+                android:textSize="15sp"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/discoverBtnIp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:minHeight="48dp"
+                android:text="@string/discover" />
+
+            <!-- The port the sweep probes. Filled in automatically from the host's own status
+                 response, so the operator normally never touches it; it is on screen because a
+                 wrong value here is otherwise invisible — discovery would just report no host. -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/port_label"
+                android:textSize="12sp" />
+
+            <EditText
+                android:id="@+id/portInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:hint="@string/port_hint"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:singleLine="true" />
+
+            <Button
+                android:id="@+id/pasteBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:minHeight="48dp"
+                android:text="@string/paste_clipboard" />
+
+            <Button
+                android:id="@+id/ipContinueBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:minHeight="52dp"
+                android:text="@string/ip_continue" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:alpha="1.0"
+                android:text="@string/ip_note"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/tailscaleHowBtnIp"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:minHeight="48dp"
+                android:text="@string/guide_tailscale_how_short"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- The Tailscale guide, on its own screen: it is long enough to need scrolling, and it
+         is the one part of setup that happens outside this app. -->
+    <ScrollView
+        android:id="@+id/tailscalePanel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="28dp">
+
+            <Button
+                android:id="@+id/guideBackBtn"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/pair_back"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/guide_tailscale_title"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/guideWhat"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="@string/guide_tailscale_what"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/guideWhen"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/guide_tailscale_when"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/guideHow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/guide_tailscale_how"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/guideAfter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/guide_tailscale_after"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/tailscaleDownloadBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:minHeight="52dp"
+                android:text="@string/guide_get_tailscale" />
+
+            <Button
+                android:id="@+id/guideDoneBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:minHeight="48dp"
+                android:text="@string/guide_done" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- First-run usage guide. Shown once, before the pairing menu: a new user does not know the
+         code lives on the desktop, and an address form teaches them nothing. Every line describes
+         something the app actually does (scan, refresh the code on the desktop, auto-connect
+         afterwards) rather than inventing steps. -->
+
+    <!-- Screen 3: connection settings. Scrollable because it grew past a short screen's
+         height once the display options were added. -->
+    <ScrollView
+        android:id="@+id/configPanel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/config_title"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <!-- A way back to the menu this was opened from. It used to be reached only from the page's
+                 bar, so leaving it was the bar's job; now the settings screen opens it, and without
+                 this button the only exit would be the system back gesture. -->
+            <Button
+                android:id="@+id/configBackBtn"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:minHeight="44dp"
+                android:text="@string/config_back"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="18dp"
+                android:alpha="1.0"
+                android:text="@string/config_hint"
+                android:textSize="13sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:alpha="1.0"
+                android:text="@string/group_address"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/urlInput2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="@string/hint_url2"
+                android:importantForAutofill="no"
+                android:inputType="textUri"
+                android:singleLine="true" />
+
+            <EditText
+                android:id="@+id/tokenInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="@string/hint_token"
+                android:importantForAutofill="no"
+                android:inputType="text"
+                android:singleLine="true" />
+
+            <EditText
+                android:id="@+id/secretInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="@string/hint_secret"
+                android:importantForAutofill="no"
+                android:inputType="text"
+                android:singleLine="true" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:alpha="1.0"
+                android:text="@string/group_display"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:alpha="1.0"
+                android:text="@string/label_font"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:id="@+id/fontGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:alpha="1.0"
+                android:text="@string/label_theme"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:id="@+id/themeGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal" />
+
+            <CheckBox
+                android:id="@+id/immersiveCheck"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:minHeight="48dp"
+                android:text="@string/option_immersive_desc"
+                android:textSize="14sp" />
+
+            <CheckBox
+                android:id="@+id/motionCheck"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/option_motion_desc"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:alpha="0.8"
+                android:text="@string/group_storage"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/cacheText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/clearCacheBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:minHeight="48dp"
+                android:text="@string/clear_cache" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/clear_cache_note"
+                android:textSize="12sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/connectBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:minHeight="48dp"
+                    android:text="@string/connect" />
+
+                <Button
+                    android:id="@+id/scanBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:minHeight="48dp"
+                    android:text="@string/scan" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Web view + back bar -->
+    <LinearLayout
+        android:id="@+id/webPanel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/topBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="60dp"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp">
+
+            <!-- The address is still bound and kept up to date, but not shown: the bar is a control
+                 strip now, and the address is reference information the user rarely needs while
+                 reading — it is on the settings screen, which is where it is edited. Requested
+                 directly: 「左上角的IP地址隐藏」. GONE rather than INVISIBLE so the gear sits where it
+                 belongs instead of leaving a gap. -->
+            <TextView
+                android:id="@+id/hostText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="middle"
+                android:gravity="center_vertical|start"
+                android:singleLine="true"
+                android:alpha="0.75"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <!-- Spacer that takes the room the address used to hold, so the gear stays put whether or
+                 not the label is shown. -->
+            <View
+                android:id="@+id/barSpacer"
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <!-- Settings takes the place the history arrows used to occupy.
+                 They were the two least-used controls on the bar: the system back gesture already
+                 covers going back, and forward is rare on a phone. Settings, by contrast, is where the
+                 address and the display options live, and it had no entry point from a page at all. -->
+            <ImageButton
+                android:id="@+id/barSettingsBtn"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:contentDescription="@string/btn_settings"
+                android:src="@drawable/ic_settings" />
+
+            <!-- Settings is the only control that stays on the bar beside the address.
+                 The right-hand "返回主页" button that used to sit here was removed: the pairing menu is
+                 reached by the gear, and leaving it is the menu's own business, so a second exit on the
+                 bar was one control too many on a one-line strip. -->
+        </LinearLayout>
+
+        <!-- What is left on screen once the bar has retracted: one small tab, centred, carrying the
+             arrow that brings the bar back and a way into settings.
+
+             It exists because retracting the bar previously removed every control with it — the page
+             gained a row of height and lost its only visible exits. The tab is deliberately short
+             (`wrap_content`, no padding beyond the icons) so the space the bar gave up is not handed
+             straight back. -->
+        <LinearLayout
+            android:id="@+id/barTab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/bar_tab_background"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <ImageButton
+                android:id="@+id/barExpandBtn"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="44dp"
+                android:layout_height="34dp"
+                android:contentDescription="@string/bar_expand"
+                android:src="@drawable/ic_arrow_down" />
+
+            <ImageButton
+                android:id="@+id/barTabSettingsBtn"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="44dp"
+                android:layout_height="34dp"
+                android:contentDescription="@string/btn_settings"
+                android:src="@drawable/ic_settings_small" />
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:max="100" />
+
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+    <!-- Shown over the WebView for the one moment that is slow: the first paint after a
+         connection, where the client downloads the whole app shell. -->
+    <TextView
+        android:id="@+id/loadHint"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#F2FFFFFF"
+        android:gravity="center"
+        android:padding="32dp"
+        android:text="@string/load_hint"
+        android:textSize="15sp"
+        android:visibility="gone" />
+
+    <!-- Last child, so it covers everything while the first page loads. The contents and
+         the entrance animation are built in SplashView; this is only its slot. -->
+    <com.dshmobile.app.SplashView
+        android:id="@+id/splash"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+</FrameLayout>

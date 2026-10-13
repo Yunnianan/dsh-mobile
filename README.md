@@ -21,9 +21,9 @@
 Android 安装包的镜像，插件的安装引导按钮**直接指向它**，手机上点一下就能下载安装。来源、版本与
 SHA-256 见 [Tailscale APK 镜像说明](features/TAILSCALE-APK.md)。
 
-| 版本 | 文件 | 大小 | SHA-256（前 16 位） |
-|---|---|---|---|
-| 16.9 | [`dist/dsh-mobile-16.9.apk`](dist/dsh-mobile-16.9.apk) | 429.7 KB | `E91319C5C256C14A` |
+| 版本 | 文件 | 大小 | SHA-256（前 16 位） | 变更 |
+|---|---|---|---|---|
+| 16.9.1 | [`dist/dsh-mobile-16.9.1.apk`](dist/dsh-mobile-16.9.1.apk) | 429.7 KB | `DF535A353F9ADB3B` | 移除横向滑动回主页的手势（误触会把会话顶掉）；回菜单改用顶栏齿轮或系统返回 |
 
 APK 是自签名应用，覆盖安装即可升级（签名指纹见文末），**配对状态保留**。
 
@@ -40,14 +40,28 @@ APK 是自签名应用，覆盖安装即可升级（签名指纹见文末），*
 | `cordis.patch.yml` | 插件自带的补丁层 |
 | `install.mjs` | 一键安装（声明依赖 + 加进 bundles + 建联接） |
 | `dist/` | 编译好的 Android 客户端 APK |
+| `android/` | Android 客户端源码（纯 Java，无第三方框架），构建说明见 [`android/README.md`](android/README.md) |
+| `libs/` | 内置的二维码解码库 `zxing-core-3.5.3.jar`（Apache-2.0） |
+| `build-apk.ps1` | 用 SDK 命令行工具构建签名 APK（`aapt2 → javac → d8 → zipalign → apksigner`，不用 Gradle） |
 | `features/` | [快速开始](features/QUICKSTART.md) 与 [安装指南](features/INSTALL.md) |
 | `test/` | 全部测试与量测脚本（不需要网络） |
 | `github-upload.mjs` | 用 REST API 把本目录上传到 GitHub（不需要装 git） |
 
-`dist/` 里的 APK 是在本仓库之外构建的：安卓客户端是一份独立的 Java 源码
-（无第三方框架，只依赖 vendored 的 `zxing-core`），构建脚本为
-`aapt2 → javac → d8 → zipalign → apksigner`，不依赖 Gradle。编译好的产物按版本放进
-`dist/`，源码本身暂未纳入本仓库。
+`dist/` 里的 APK 由本仓库的 `android/` 源码构建：纯 Java、无第三方框架，
+只依赖 vendored 的 `libs/zxing-core`，构建链是
+`aapt2 → javac → d8 → zipalign → apksigner`，不依赖 Gradle。
+在仓库根目录一条命令即可重建（需要自备 JDK 与 Android SDK）：
+
+```powershell
+pwsh -File .\build-apk.ps1 -VersionName 16.9.1 -VersionCode 140
+```
+
+两个容易踩的点，动手前请先看 [`android/README.md`](android/README.md)：
+
+* **版本号要改两处** —— `aapt2` 的命令行参数只在 manifest 没声明时才生效，
+  而 `android/AndroidManifest.xml` 一直是写死的，只改参数会静默产出旧版本号的包。
+* **签名密钥不在仓库里** —— 没有它构建照样成功，但签名不同，签出来的包
+  无法覆盖安装在官方包之上（Android 要求升级包签名一致）。
 
 ---
 

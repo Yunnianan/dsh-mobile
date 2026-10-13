@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The settings glyph at tab scale, on a 16dp grid.
+
+     Not a scaled copy of ic_settings: that one is drawn on a 24dp grid with its own internal
+     padding, and squeezing it into the tab's 44x34dp slot made the ring too small to read as a
+     gear. Drawing at the size it will be used keeps the strokes at the intended weight. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M13.1,8.7c0,-0.23 0.05,-0.47 0.05,-0.7s-0.02,-0.47 -0.05,-0.7l1.5,-1.17c0.13,-0.1 0.17,-0.3 0.09,-0.45l-1.42,-2.46c-0.09,-0.16 -0.27,-0.21 -0.43,-0.16l-1.77,0.71c-0.37,-0.28 -0.77,-0.52 -1.2,-0.7L9.6,1.2C9.57,1.02 9.42,0.9 9.24,0.9H6.4c-0.18,0 -0.32,0.13 -0.35,0.3L5.79,3.07c-0.44,0.18 -0.84,0.42 -1.2,0.7L2.82,3.06c-0.17,-0.06 -0.35,0 -0.43,0.16L0.97,5.68C0.88,5.83 0.92,6.03 1.06,6.13l1.5,1.17c-0.03,0.23 -0.06,0.47 -0.06,0.7s0.02,0.47 0.06,0.7l-1.5,1.17c-0.13,0.1 -0.17,0.3 -0.09,0.45l1.42,2.46c0.09,0.16 0.27,0.21 0.43,0.16l1.77,-0.71c0.37,0.28 0.77,0.52 1.2,0.7l0.26,1.87c0.03,0.18 0.18,0.3 0.35,0.3h2.84c0.18,0 0.33,-0.13 0.35,-0.3l0.26,-1.87c0.44,-0.18 0.84,-0.42 1.2,-0.7l1.77,0.71c0.17,0.06 0.35,0 0.43,-0.16l1.42,-2.46c0.09,-0.16 0.05,-0.35 -0.09,-0.45L13.1,8.7zM8.1,10.6c-1.44,0 -2.6,-1.17 -2.6,-2.6s1.16,-2.6 2.6,-2.6s2.6,1.17 2.6,2.6S9.54,10.6 8.1,10.6z" />
+</vector>

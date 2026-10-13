@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Window exit animation, kept short and mostly opaque so leaving the app does not
+     look like a flash. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:interpolator/accelerate_quad">
+    <translate
+        android:duration="180"
+        android:fromXDelta="0"
+        android:toXDelta="8%p" />
+    <alpha
+        android:duration="180"
+        android:fromAlpha="1.0"
+        android:toAlpha="0.75" />
+</set>

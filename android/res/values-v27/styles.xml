@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shell theme for API 27 and above: the only difference from the base is the window
+     background.
+
+     The window draws behind the status and navigation bars, so this colour is what fills
+     those bands. The page's shell is light, so white makes the bands disappear into the
+     page instead of reading as a black strip along the top.
+
+     It starts at API 27 deliberately: below that the app's launcher icon is a plain bitmap,
+     and a light window background behind it is known to produce a washed-out icon on those
+     releases. See make_icons.py for the icons themselves. -->
+<resources>
+    <style name="AppTheme" parent="@style/AppThemeBase">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
+</resources>

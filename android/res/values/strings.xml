@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DSH 手机端</string>
+
+    <!-- The port used by the LAN sweep. Filled in from the host's own status response, so it is
+         normally not something the operator edits — it is visible because a stale value here is
+         otherwise invisible: the sweep would simply report that no host is on the network. -->
+    <string name="port_label">端口（自动发现时使用，通常自动填入）</string>
+    <string name="port_hint">19387</string>
+
+    <!-- 2.7: the two ways in, each on its own screen -->
+    <string name="pairing_intro">手机直接打开 DSH，电脑只当服务器</string>
+    <string name="pairing_choose">选择一种连接方式</string>
+
+    <!-- The second entry on the pairing menu. Tailscale is its own mode because it is the one that
+         works from anywhere: the host recognises the device by its tailnet identity, so no QR code,
+         no key and no click on the desktop are needed. -->
+    <string name="pair_tailscale">Tailscale 配对（任何网络都能用）</string>
+    <string name="pair_tailscale_searching">正在查找 Tailscale 地址…</string>
+    <string name="pair_tailscale_none">这台手机还没存过 Tailscale 地址。\n先在电脑上确认 Tailscale 已登录，手机也打开 Tailscale，然后点「自动发现」。</string>
+
+    <!-- Shown while pairing over Tailscale when the tunnel is off. Without it a 100.x address cannot
+         work, and hunting through the app drawer for an icon is exactly the step this removes. -->
+    <string name="open_tailscale">打开 Tailscale 并打开开关</string>
+    <string name="tailscale_off">Tailscale 现在没开 —— 100.x 地址要有它才能连通。\n点下面的按钮去打开开关，回来会自动继续配对。</string>
+    <string name="tailscale_on">Tailscale 已开启，可以直接配对。</string>
+    <string name="tailscale_absent">这台手机没装 Tailscale。回到上一页点「Tailscale 配对」，那里有安装引导。</string>
+
+    <!-- The Tailscale nudge. Shown to a first-time user, who is most likely on the same
+         network as the computer and does not need it yet — so it is an offer, not a step. -->
+    <string name="pairing_note_same_wifi">同一 WiFi 下可以直接连。想在外面也能用，需要装 Tailscale。</string>
+    <string name="pair_discover_hint">「自动发现」和「扫码」只能连同一 WiFi 下的电脑；不在同一网络时用 Tailscale 地址。</string>
+    <string name="guide_tailscale_title">在外面也能用 · Tailscale</string>
+    <string name="guide_tailscale_what">Tailscale 是一个免费的个人虚拟局域网。装好之后，不管你在哪（4G/5G、别人家的 WiFi），手机都能像在同一个局域网里一样连到这台电脑。</string>
+    <string name="guide_tailscale_when">什么时候需要：手机和电脑不在同一个 WiFi 时。只在家里用可以先跳过。</string>
+    <string name="guide_tailscale_how">怎么装：手机和电脑各装一个，用同一个账号登录，两边的开关都打开。手机端只登录不开开关是不通的。</string>
+    <string name="guide_tailscale_after">装完之后：把电脑的 Tailscale IP 填进地址栏，格式是「http://100.x.x.x:19387」。桌面面板上会显示确切地址，点「复制」直接粘过来就行。</string>
+    <string name="guide_tailscale_how_short">在外面也能用？看 Tailscale 安装说明</string>
+    <string name="guide_get_tailscale">下载 Tailscale（官网）</string>
+
+    <!-- 扫码页 -->
+    <string name="scan_hint">把二维码放入框内</string>
+    <string name="scan_pick_image">从相册选图</string>
+    <string name="scan_image_none">这张图里没有找到二维码</string>
+    <string name="scan_image_failed">读不出这张图片</string>
+    <string name="scan_image_reading">正在识别图片…</string>
+    <string name="guide_done">我知道了，返回</string>
+    <string name="guide_start_pairing">装好了，开始配对</string>
+    <string name="guide_title">Tailscale 安装说明</string>
+
+    <!-- First-run onboarding. A new user has no reason to know the code lives on the desktop, so
+         the first launch explains the pairing instead of dropping them straight on an address
+         form. Shown once; the flag is written when the user finishes or skips it. -->
+
+    <!-- Storage: the WebView's caches grow without a bound unless they are capped, and a
+         version upgrade leaves the previous copy of every script behind. -->
+    <string name="group_storage">存储</string>
+    <string name="clear_cache">清除缓存</string>
+    <string name="clear_cache_note">只清缓存，不动配对。界面资源会重新下载一次，之后恢复正常速度。</string>
+    <string name="cache_unknown">统计中…</string>
+    <string name="pair_scan">扫码 / 配对链接</string>
+    <string name="pair_ip">输入 IP 地址</string>
+    <string name="pair_back">← 返回</string>
+    <string name="ip_title">输入 IP 地址</string>
+    <string name="ip_hint">填电脑的地址。优先用 Tailscale 地址（http://100.x.x.x:19387，任何网络可用），同一 WiFi 下也可以用内网地址（http://192.168.x.x:19387，更快）。</string>
+    <string name="ip_continue">下一步：配对设置</string>
+    <string name="ip_note">手机端地址必须用 IP，不能用主机名——用主机名会出现「网页能打开、但每次操作都失败」。</string>
+    <string name="config_title">配对设置</string>
+    <string name="config_hint">主地址在上一步填好了。这里可以补备用地址、令牌和一次性密钥，然后连接。</string>
+    <string name="settings_hint">手机直接打开 DSH，电脑只当服务器。下面填地址，或用「自动发现」在同一 WiFi 下找宿主。</string>
+    <string name="hint_url">主地址，例如 http://100.x.x.x:19387（Tailscale，任何网络）</string>
+    <string name="hint_url2">备用地址，例如 http://192.168.x.x:19387（内网，同一 WiFi 更快）</string>
+    <string name="hint_token">配对令牌（可留空）</string>
+    <string name="hint_secret">一次性配对密钥（只需填一次，之后自动配对）</string>
+    <string name="connect">连接</string>
+    <string name="scan">扫码</string>
+    <string name="connecting">正在连接…</string>
+    <string name="err_url">请先填写地址</string>
+    <string name="btn_back">返回主页</string>
+
+    <!-- 2.1: discovery and display options -->
+    <string name="discover">在同一 WiFi 下自动发现宿主</string>
+    <string name="group_address">连接地址</string>
+    <string name="group_display">显示</string>
+    <string name="label_font">字号</string>
+    <string name="label_theme">主题</string>
+    <string name="option_font_small">小</string>
+    <string name="option_font_normal">标准</string>
+    <string name="option_font_large">大</string>
+    <string name="option_theme_system">跟随系统</string>
+    <string name="option_theme_light">浅色</string>
+    <string name="option_theme_dark">深色</string>
+    <string name="option_immersive_desc">全屏沉浸（隐藏顶栏，从屏幕顶端下滑可唤出）</string>
+    <string name="option_motion_desc">顶栏随滚动自动隐藏（下滑看内容时收起，上滑回来）</string>
+    <string name="load_hint">正在下载界面…\n首次连接需要一点时间，之后就快了。</string>
+    <string name="err_no_host">没有在局域网里找到宿主。确认电脑上 DSH 正在运行，且手机和电脑在同一个 WiFi。</string>
+    <string name="discovering">正在扫描局域网…</string>
+
+    <!-- 2.3: clipboard entry, and the shell no longer claims the long-press gesture -->
+    <string name="paste_clipboard">从剪贴板填入（配对链接 / 地址 / 密钥）</string>
+    <string name="paste_empty">剪贴板里没有内容</string>
+    <string name="paste_filled">已从剪贴板填入地址与密钥，点「连接」即可</string>
+
+    <!-- 2.5: the top bar's controls. The history arrows that used to live here were dropped: the
+         system back gesture already covers going back, forward is rare on a phone, and settings had
+         no entry point from a page at all. -->
+    <string name="nav_back">后退</string>
+    <string name="nav_forward">前进</string>
+    <string name="btn_settings">设置</string>
+    <string name="bar_expand">展开顶栏</string>
+    <string name="config_back">← 返回配对设置</string>
+    <string name="pairing_display">显示与存储设置</string>
+    <string name="pair_manual">手动输入地址（Tailscale IP / 局域网 IP）</string>
+</resources>

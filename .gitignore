@@ -14,3 +14,17 @@ desktop.ini
 # 临时与日志
 *.log
 *.tmp
+
+# Android 构建产物（源码在 android/，产物按版本放进 dist/）
+build/
+out/
+*.idsig
+
+# 签名密钥：绝不入库。持有它就能签出被 Android 当作“官方升级”接受的包，
+# 跟着源码公开等于把这条路径交给任何人。没有它构建照样成功，只是签名不同。
+keystore/
+*.jks
+*.keystore
+
+# 上传用的个人令牌
+.github-token

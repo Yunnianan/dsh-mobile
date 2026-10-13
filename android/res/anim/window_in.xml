@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Window enter animation: the shell slides in from the right, so opening it from a
+     deep link or the launcher reads as a transition rather than a jump cut. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:interpolator/decelerate_quad">
+    <translate
+        android:duration="220"
+        android:fromXDelta="12%p"
+        android:toXDelta="0" />
+    <alpha
+        android:duration="220"
+        android:fromAlpha="0.4"
+        android:toAlpha="1.0" />
+</set>

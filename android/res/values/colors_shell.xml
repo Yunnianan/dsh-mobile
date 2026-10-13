@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shell colours for the light theme.
+
+     These exist as resources rather than as literals in the views that use them, because the
+     shell follows the system's light/dark setting and two of them are also what the window
+     paints behind the system bars. `values-night/colors_shell.xml` carries the counterparts.
+
+     The text colours are deliberately explicit rather than inherited from the theme: this
+     profile runs UI skin plugins that override theme attributes, and while that is the whole
+     point of a skin for the page itself, the shell's own labels must not become unreadable
+     because of it. -->
+<resources>
+    <!-- Behind the opening frame, and the window background the bars draw over. -->
+    <color name="splash_background">#FFFFFFFF</color>
+
+    <!-- The shell's own screens: opaque, so a screen change never shows what is underneath. -->
+    <color name="shell_surface">#FFFFFFFF</color>
+
+    <!-- Primary label text, and the quieter secondary text. -->
+    <color name="shell_text">#FF1B1B1B</color>
+    <color name="shell_text_dim">#FF5A5A5A</color>
+</resources>

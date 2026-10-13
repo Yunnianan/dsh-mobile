@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Window background of the shell, version-qualified on purpose.
+
+     The window draws behind the status and navigation bars, so this colour is what fills
+     those bands. The artwork's own plate is white, and the page's shell is light, so white
+     makes the bands disappear into the page. On API 27 and above the launcher icon is an
+     adaptive icon, so a light background cannot sit behind a transparent one and corrupt
+     the icon shape.
+
+     Below API 27 this file is not used and the platform default background applies; that is
+     deliberate, because a light window background behind a pre-adaptive launcher icon is
+     known to produce a washed-out icon on those releases. -->
+<resources>
+    <color name="window_background">#FFFFFFFF</color>
+</resources>

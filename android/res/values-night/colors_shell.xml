@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shell colours for the dark theme: the counterpart to values/colors_shell.xml.
+
+     Loaded automatically when the system is in dark mode, including while the app is
+     running, because MainActivity declares `uiMode` in configChanges and re-applies the
+     shell colours on the resulting callback. -->
+<resources>
+    <color name="splash_background">#FF121212</color>
+    <color name="shell_surface">#FF121212</color>
+    <color name="shell_text">#FFF2F2F2</color>
+    <color name="shell_text_dim">#FFB8B8B8</color>
+</resources>

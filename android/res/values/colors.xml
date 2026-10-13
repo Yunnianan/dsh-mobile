@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Background of the adaptive launcher icon: the navy of the character's hair, matching the
+     plate baked into the foreground crop so the two read as one surface. -->
+<resources>
+    <color name="ic_launcher_background">#2C3E76</color>
+
+    <!-- Background of the system's launch window (Android 12+), which paints our icon before the
+         activity exists. It uses the icon's own navy so the mark reads as sitting on its plate
+         rather than as a sticker on an unrelated colour — and so the hand-off from the system's
+         window to the app's own splash is invisible, since both use this colour. -->
+    <color name="launch_window_background">#2C3E76</color>
+</resources>

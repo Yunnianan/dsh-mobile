@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Downward chevron, for the tab that restores the retracted top bar.
+
+     Drawn as a chevron rather than a full arrow because the tab is 44x34dp: a full-headed arrow
+     loses its head at that size and reads as a smudge. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M7.41,8.59L12,13.17l4.59,-4.58L18,10l-6,6l-6,-6z" />
+</vector>

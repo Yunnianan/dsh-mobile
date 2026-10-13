@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Window background for dark mode on API 27 and above: the dark counterpart of
+     values-v27/colors.xml, and the third case of that same resource name.
+
+     The four cases are: dark+27 (here), light+27 (values-v27), dark below 27
+     (values-night), and light below 27 (nothing, so the platform default applies because a
+     light window background behind a pre-adaptive launcher icon washes the icon out). -->
+<resources>
+    <color name="window_background">#FF121212</color>
+</resources>

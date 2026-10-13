@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shell theme, base version (all API levels).
+
+     The base is the platform's device-default no-action-bar theme, which follows the system
+     light/dark setting. It makes the system bars transparent and lets the window draw behind
+     them, and adds the window animations.
+
+     `values-v27/styles.xml` re-declares AppTheme with one extra item (a light window
+     background); everything else lives here so the two never drift apart. -->
+<resources>
+    <style name="AppThemeBase" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowAnimationStyle">@style/AppWindowAnimation</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="AppTheme" parent="@style/AppThemeBase" />
+
+    <style name="AppWindowAnimation">
+        <item name="android:activityOpenEnterAnimation">@anim/window_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/window_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/window_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/window_out</item>
+    </style>
+</resources>
