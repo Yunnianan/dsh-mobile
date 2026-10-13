@@ -1,27 +1,40 @@
 /**
- * Which address does the plugin advertise as "the LAN"?
+ * Which addresses does the plugin advertise as "the LAN", and in what order?
  *
- * Why this test exists: `lanUrl()` used to be "the first non-internal IPv4 that is not Tailscale",
- * and on a machine with another VPN installed that rule returned the VPN's address. The reported
- * case: Radmin VPN enumerated first and held `26.244.162.123` — a public address — so the pairing
- * panel advertised `http://26.244.162.123:19387`, which no phone on the Wi-Fi can reach, while the
- * real `192.168.31.36` was never examined. The symptom is indistinguishable from "the LAN does not
- * work", and it cost a debugging session on a second machine to find.
+ * The bug this covers: `lanUrl()` used to be "the first non-internal IPv4 that is not Tailscale".
+ * On a machine with another VPN installed that returned the VPN's address — the report had Radmin
+ * VPN enumerated first, holding `26.244.162.123`, a *public* address — so the pairing panel
+ * advertised something no phone could reach while the real `192.168.31.36` was never examined.
+ * The symptom is indistinguishable from "the LAN does not work".
  *
- * How it is checked: the plugin reads addresses through `os.networkInterfaces()`, so this test
- * copies `lib/` to a temporary directory, replaces that one function with a fixture, imports the
- * plugin for real, and reads what its routes report. Mocking the OS boundary rather than the
- * plugin's internals means the assertions exercise the shipped code path.
+ * The rule now avoids interface names entirely. Names are localised (this machine's adapters are
+ * `WLAN` and `以太网`), every VPN vendor invents its own, and a false positive silently discards the
+ * one address that works — so an earlier name blacklist was removed. What decides instead:
  *
- * No network is used: every route is driven through the same fake request/response the other
- * route tests use.
+ *   1. the OS's own default route (`Get-NetRoute`), naming the interface the machine really uses;
+ *   2. RFC1918 address space, which rejects Radmin's public address outright;
+ *   3. the reserved `198.18.0.0/15` block, where Clash and sing-box put their tunnel by default.
+ *
+ * Ordering is a preference, not a verdict: the client receives the whole list and probes it, so a
+ * wrong entry costs one probe rather than a failed pairing. These tests therefore assert the full
+ * ordered list rather than a single winner.
+ *
+ * Known residual limitation, stated rather than hidden: a VPN that is *not* the default route and
+ * that uses an ordinary private range (a WireGuard tunnel on `10.0.0.0/24`, say) still appears in
+ * the list. It is ranked after the default-route interface, so the phone tries the real LAN first
+ * and only falls through if that fails. Detecting it would mean consulting interface properties
+ * again — the thing this rule exists to avoid.
+ *
+ * How it is checked: the plugin reads addresses through `os.networkInterfaces()` and the route
+ * through `child_process.execFileSync`, so this test copies `lib/` to a temporary directory,
+ * replaces both, imports the plugin for real, and reads what its route reports. Stubbing the OS
+ * boundaries rather than the plugin's internals means the assertions exercise shipped code.
  *
  * Run: node test/lan-address-test.cjs
  */
 
 'use strict';
 
-const assert = require('node:assert');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -40,48 +53,102 @@ function check(name, condition, detail) {
   }
 }
 
-/** A fixture shaped exactly like `os.networkInterfaces()`, in enumeration order. */
-const FIXTURES = {
-  'the reported machine: Radmin VPN enumerated first': {
-    'Radmin VPN': [{ family: 'IPv4', internal: false, address: '26.244.162.123', netmask: '255.0.0.0' }],
-    'WLAN': [{ family: 'IPv4', internal: false, address: '192.168.31.36', netmask: '255.255.255.0' }],
-    'Loopback Pseudo-Interface 1': [{ family: 'IPv4', internal: true, address: '127.0.0.1' }],
-  },
-  'a TAP adapter that carries a private address': {
-    'SoGame-VPN': [{ family: 'IPv4', internal: false, address: '10.10.10.88' }],
-    'WLAN': [{ family: 'IPv4', internal: false, address: '192.168.31.36' }],
-    'Tailscale': [{ family: 'IPv4', internal: false, address: '100.82.206.124' }],
-    'Loopback Pseudo-Interface 1': [{ family: 'IPv4', internal: true, address: '127.0.0.1' }],
-  },
-  'a plain machine with Tailscale and Wi-Fi': {
-    'Tailscale': [{ family: 'IPv4', internal: false, address: '100.82.206.124' }],
-    'WLAN 2': [{ family: 'IPv4', internal: false, address: '192.168.31.56' }],
-    'Loopback Pseudo-Interface 1': [{ family: 'IPv4', internal: true, address: '127.0.0.1' }],
-  },
-  'link-local only: nothing usable': {
-    'WLAN 4': [{ family: 'IPv4', internal: false, address: '169.254.117.97' }],
-    'Loopback Pseudo-Interface 1': [{ family: 'IPv4', internal: true, address: '127.0.0.1' }],
-  },
-  'Wi-Fi and Ethernet both present: wired wins': {
-    'WLAN': [{ family: 'IPv4', internal: false, address: '192.168.31.36' }],
-    'Ethernet': [{ family: 'IPv4', internal: false, address: '192.168.1.20' }],
-  },
-};
+const loopback = { family: 'IPv4', internal: true, address: '127.0.0.1' };
+const v4 = (address) => ({ family: 'IPv4', internal: false, address });
 
-const EXPECTED = {
-  'the reported machine: Radmin VPN enumerated first': ['http://192.168.31.36:19387'],
-  'a TAP adapter that carries a private address': ['http://192.168.31.36:19387'],
-  'a plain machine with Tailscale and Wi-Fi': ['http://192.168.31.56:19387'],
-  'link-local only: nothing usable': [],
-  'Wi-Fi and Ethernet both present: wired wins': ['http://192.168.1.20:19387', 'http://192.168.31.36:19387'],
-};
+/**
+ * Each case: the interfaces the plugin will see, the names the stubbed route query reports as
+ * carrying the default route, and the exact list expected back.
+ */
+const CASES = [
+  {
+    label: '报告的机器：Radmin VPN 枚举在前，WLAN 承载默认路由',
+    interfaces: {
+      'Radmin VPN': [v4('26.244.162.123')],
+      'WLAN': [v4('192.168.31.36')],
+      'Loopback Pseudo-Interface 1': [loopback]
+    },
+    defaultRoutes: ['WLAN'],
+    expected: ['http://192.168.31.36:19387']
+  },
+  {
+    label: 'TAP 网卡的私网地址保留，但排在默认路由之后',
+    interfaces: {
+      'SoGame-VPN': [v4('10.10.10.88')],
+      'WLAN': [v4('192.168.31.36')],
+      'Tailscale': [v4('100.82.206.124')],
+      'Loopback Pseudo-Interface 1': [loopback]
+    },
+    defaultRoutes: ['WLAN'],
+    // Both are private, so both are offered. Dropping the TAP address by name was the old
+    // behaviour and exactly the brittleness being removed; keeping it costs one failed probe.
+    expected: ['http://192.168.31.36:19387', 'http://10.10.10.88:19387']
+  },
+  {
+    label: '普通机器：Tailscale + WiFi',
+    interfaces: {
+      'Tailscale': [v4('100.82.206.124')],
+      'WLAN 2': [v4('192.168.31.56')],
+      'Loopback Pseudo-Interface 1': [loopback]
+    },
+    defaultRoutes: ['WLAN 2'],
+    expected: ['http://192.168.31.56:19387']
+  },
+  {
+    label: '只有链路本地地址：没有可用内网',
+    interfaces: {
+      'WLAN 4': [v4('169.254.117.97')],
+      'Loopback Pseudo-Interface 1': [loopback]
+    },
+    defaultRoutes: [],
+    expected: []
+  },
+  {
+    label: '隧道用 198.18/15 预留段：仅在别无选择时给出',
+    interfaces: {
+      'Some Tunnel': [v4('198.18.0.1')],
+      'Loopback Pseudo-Interface 1': [loopback]
+    },
+    defaultRoutes: ['Some Tunnel'],
+    expected: ['http://198.18.0.1:19387']
+  },
+  {
+    label: '真内网地址优先于 198.18/15 预留段',
+    interfaces: {
+      'Some Tunnel': [v4('198.18.0.1')],
+      'WLAN': [v4('192.168.31.36')],
+      'Loopback Pseudo-Interface 1': [loopback]
+    },
+    defaultRoutes: ['Some Tunnel', 'WLAN'],
+    expected: ['http://192.168.31.36:19387']
+  },
+  {
+    label: '顺序由默认路由决定，而不是枚举顺序',
+    interfaces: {
+      'Ethernet': [v4('192.168.1.20')],
+      'WLAN': [v4('192.168.31.36')]
+    },
+    defaultRoutes: ['WLAN'],
+    // WLAN is enumerated second but carries the default route, so it leads.
+    expected: ['http://192.168.31.36:19387', 'http://192.168.1.20:19387']
+  },
+  {
+    label: '没有默认路由信息时退化为纯地址过滤（仍排除公网段）',
+    interfaces: {
+      'Radmin VPN': [v4('26.244.162.123')],
+      'WLAN': [v4('192.168.31.36')]
+    },
+    defaultRoutes: [],
+    expected: ['http://192.168.31.36:19387']
+  }
+];
 
-function fakeReq(host, method = 'POST', body = '{}') {
-  const chunks = [Buffer.from(body)];
+function fakeReq() {
+  const chunks = [Buffer.from('{}')];
   return {
-    method,
+    method: 'POST',
     url: '/m/api/get-code',
-    headers: { host },
+    headers: { host: '127.0.0.1:19387' },
     socket: { remoteAddress: '127.0.0.1', encrypted: false },
     on(event, handler) {
       if (event === 'data') chunks.forEach((chunk) => handler(chunk));
@@ -90,50 +157,45 @@ function fakeReq(host, method = 'POST', body = '{}') {
     },
     async *[Symbol.asyncIterator]() {
       yield* chunks;
-    },
+    }
   };
 }
 
 function fakeRes() {
-  const out = { status: 0, body: '', headers: {} };
+  const out = { status: 0, body: '' };
   return {
     out,
-    writeHead(status, headers) {
-      out.status = status;
-      out.headers = headers || {};
-    },
-    end(chunk) {
-      if (chunk) out.body += chunk.toString();
-    },
+    writeHead(status) { out.status = status; },
+    end(chunk) { if (chunk) out.body += chunk.toString(); }
   };
 }
 
-/** Load the plugin with `networkInterfaces` replaced by one fixture. */
-async function loadWith(fixture, tempRoot) {
-  const dir = fs.mkdtempSync(path.join(tempRoot, 'lan-'));
-  fs.cpSync(path.join(__dirname, '..', 'lib'), path.join(dir, 'lib'), { recursive: true });
-  fs.copyFileSync(path.join(__dirname, '..', 'cordis.patch.yml'),
-    path.join(dir, 'cordis.patch.yml'));
-  // A cache-busting query keeps each import a fresh module, so the fixture applies per case.
-  const url = pathToFileURL(path.join(dir, 'lib', 'index.js')).href + '?t=' + Date.now();
-  return import(url);
-}
-
 async function main() {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-lan-'));
-  console.log('临时目录: ' + tempRoot);
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-lan-'));
+  console.log('临时目录: ' + root);
   console.log();
 
-  for (const [label, fixture] of Object.entries(FIXTURES)) {
-    console.log('用例: ' + label);
-    let plugin;
-    try {
-      plugin = await loadWith(fixture, tempRoot);
-    } catch (error) {
-      check(label + ' — 插件可加载', false, error.message);
-      continue;
-    }
-    // Capture the routes by asking the plugin to apply against a recording web server.
+  for (const testCase of CASES) {
+    console.log('用例: ' + testCase.label);
+
+    // Copy the real lib so the plugin under test is the shipped code.
+    const dir = fs.mkdtempSync(path.join(root, 'plug-'));
+    fs.cpSync(path.join(__dirname, '..', 'lib'), path.join(dir, 'lib'), { recursive: true });
+    fs.copyFileSync(path.join(__dirname, '..', 'cordis.patch.yml'),
+      path.join(dir, 'cordis.patch.yml'));
+
+    // Stub both OS boundaries. They must stay stubbed until the routes are *called* — the plugin
+    // resolves them at call time — and `syncBuiltinESMExports()` is required because `node:os` and
+    // `node:child_process` have separate CommonJS and ESM views: assigning to one does not update
+    // the other, which silently left every case using real data.
+    const osModule = require('node:os');
+    const cpModule = require('node:child_process');
+    const realInterfaces = osModule.networkInterfaces;
+    const realExec = cpModule.execFileSync;
+    osModule.networkInterfaces = () => testCase.interfaces;
+    cpModule.execFileSync = () => testCase.defaultRoutes.join('\n');
+    require('node:module').syncBuiltinESMExports();
+
     const routes = new Map();
     const disposers = [];
     const ctx = {
@@ -144,14 +206,9 @@ async function main() {
           return () => {};
         }
       },
-      connection: {
-        authenticatedUrl: (base) => `${base}?token=STUB`
-      },
+      connection: { authenticatedUrl: (base) => `${base}?token=STUB` },
       effect(fn) {
         const dispose = fn();
-        // Collect the disposers rather than discarding them. `apply()` starts a tunnel manager
-        // whose polling keeps the event loop alive, so the first version of this test printed a
-        // clean pass and then never exited — which looks exactly like a hung test.
         if (typeof dispose === 'function') disposers.push(dispose);
         return () => {};
       },
@@ -164,81 +221,58 @@ async function main() {
         callback(ctx);
       }
     };
-    let temporaryHome;
-    // The stub has to stay installed until the routes are *called*, not just until the module is
-    // imported: the plugin resolves `networkInterfaces()` at call time, so restoring it after
-    // `import()` left every case answering with the first case's fixture.
-    //
-    // `syncBuiltinESMExports()` is required as well. `node:os` has two views in Node — the CommonJS
-    // export and the ESM module namespace — and assigning to one does not update the other. Without
-    // the sync the plugin's ESM import kept calling the real `networkInterfaces()`, so every case
-    // reported the machine this test runs on (192.168.31.56) instead of its fixture.
-    const osModule = require('node:os');
-    const realNetworkInterfaces = osModule.networkInterfaces;
-    osModule.networkInterfaces = () => fixture;
-    require('node:module').syncBuiltinESMExports();
+
+    const home = fs.mkdtempSync(path.join(root, 'home-'));
+    process.env.DSH_HOME = home;
+
+    let got = null;
     try {
-      // DSH_HOME must point somewhere temporary. Without it the plugin reads and writes the
-      // operator's real pairing state — including rotating the live auto-pair key, which would
-      // invalidate every already-paired phone (a mistake this repository has already made once).
-      temporaryHome = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-home-'));
-      process.env.DSH_HOME = temporaryHome;
+      const url = pathToFileURL(path.join(dir, 'lib', 'index.js')).href + '?t=' + Date.now();
+      const plugin = await import(url);
       await plugin.apply(ctx, {
         tunnelUrl: 'https://test-tunnel.example',
-        stateFile: path.join(temporaryHome, 'state.json')
+        stateFile: path.join(home, 'state.json')
       });
+      const handler = routes.get('exact:/m/api/get-code');
+      if (!handler) throw new Error('get-code 路由未注册');
+      const res = fakeRes();
+      await handler(fakeReq(), res);
+      const payload = JSON.parse(res.out.body);
+      got = Array.isArray(payload.lanUrls) ? payload.lanUrls : (payload.lanUrl ? [payload.lanUrl] : []);
     } catch (error) {
-      check(label + ' — 插件可注册', false, error.message);
-      osModule.networkInterfaces = realNetworkInterfaces;
-    require('node:module').syncBuiltinESMExports();
-      fs.rmSync(temporaryHome, { recursive: true, force: true });
-      continue;
+      check('  插件可加载并应答', false, error.message);
+      got = null;
+    } finally {
+      for (const dispose of disposers.splice(0)) {
+        try { dispose(); } catch { /* must not fail the run */ }
+      }
+      osModule.networkInterfaces = realInterfaces;
+      cpModule.execFileSync = realExec;
+      require('node:module').syncBuiltinESMExports();
+      fs.rmSync(home, { recursive: true, force: true });
     }
 
-    const handler = routes.get('exact:/m/api/get-code');
-    if (!handler) {
-      check(label + ' — get-code 路由存在', false);
-      osModule.networkInterfaces = realNetworkInterfaces;
-    require('node:module').syncBuiltinESMExports();
-      fs.rmSync(temporaryHome, { recursive: true, force: true });
-      continue;
+    if (got !== null) {
+      check('  地址列表与顺序正确',
+        JSON.stringify(got) === JSON.stringify(testCase.expected),
+        '得到 ' + JSON.stringify(got) + '，期望 ' + JSON.stringify(testCase.expected));
+      if (got.length > 0) {
+        check('  没有公网段地址（如 Radmin 的 26.x）',
+          !got.some((url) => /^http:\/\/26\./.test(url)), JSON.stringify(got));
+      }
     }
-    const res = fakeRes();
-    await handler(fakeReq('127.0.0.1:19387'), res);
-    let payload = null;
-    try {
-      payload = JSON.parse(res.out.body);
-    } catch { /* reported below */ }
-    const got = payload && Array.isArray(payload.lanUrls) ? payload.lanUrls : (payload && payload.lanUrl ? [payload.lanUrl] : []);
-    const want = EXPECTED[label];
-    check('  lanUrl 正确', JSON.stringify(got) === JSON.stringify(want),
-      '得到 ' + JSON.stringify(got) + '，期望 ' + JSON.stringify(want));
-    // A VPN or non-private address must never be what the panel advertises.
-    if (payload && payload.lanUrl) {
-      check('  不是 VPN / 非私网地址',
-        !/26\.244\.|10\.10\.10\.|100\.82\.|169\.254\./.test(payload.lanUrl),
-        payload.lanUrl);
-    }
-    // Release everything apply() started, then restore the real os view.
-    for (const dispose of disposers.splice(0)) {
-      try { dispose(); } catch { /* a disposer that throws must not fail the run */ }
-    }
-    fs.rmSync(temporaryHome, { recursive: true, force: true });
-    osModule.networkInterfaces = realNetworkInterfaces;
-    require('node:module').syncBuiltinESMExports();
     console.log();
   }
 
-  fs.rmSync(tempRoot, { recursive: true, force: true });
+  fs.rmSync(root, { recursive: true, force: true });
   console.log();
   if (failures) {
     console.log(failures + ' / ' + checks + ' 项失败');
     process.exit(1);
   }
   console.log('ALL LAN ADDRESS CHECKS PASSED (' + checks + ' 项)');
-  // Exit explicitly. Even with the disposers released, a stray handle would otherwise keep the
-  // process alive after a clean pass, and a test that hangs after passing is worse than one that
-  // fails: it looks like a bug in the code under test.
+  // Exit explicitly: the plugin's tunnel manager keeps handles open, and a test that passes and
+  // then hangs looks like a bug in the code under test rather than in the test.
   process.exit(0);
 }
 
