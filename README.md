@@ -19,7 +19,7 @@
 
 | 版本 | 文件 | 大小 | SHA-256（前 16 位） |
 |---|---|---|---|
-| 9.6 | [`dist/dsh-mobile-9.6.apk`](dist/dsh-mobile-9.6.apk) | 545.5 KB | `78022B7667457BF6` |
+| 9.7 | [`dist/dsh-mobile-9.7.apk`](dist/dsh-mobile-9.7.apk) | 545.5 KB | `FFE8E952F84503E7` |
 
 APK 是自签名应用，覆盖安装即可升级（签名指纹见文末），**配对状态保留**。
 
