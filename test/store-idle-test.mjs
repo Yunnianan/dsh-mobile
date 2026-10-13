@@ -1,9 +1,13 @@
-﻿import { readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const src = readFileSync("./lib/index.js", "utf8");
+// Resolved against this file, not the working directory. The test is run both from the repo
+// (`repo/test/`, with `../lib/`) and from inside the shipped package (`plugin/test/`, with
+// `../lib/`), and a bare relative path would only work when the caller happened to be in the right
+// directory — measured as `ENOENT … plugin/test/lib/index.js` when run from the package root.
+const src = readFileSync(new URL("../lib/index.js", import.meta.url), "utf8");
 // Pull the class out and stub the two constants it closes over.
 const start = src.indexOf("class PairingStore");
 const end = src.indexOf("\n}", src.indexOf("checkAutoPairSecret")) + 2;
