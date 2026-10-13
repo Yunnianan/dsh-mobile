@@ -23,7 +23,7 @@ SHA-256 见 [Tailscale APK 镜像说明](features/TAILSCALE-APK.md)。
 
 | 版本 | 文件 | 大小 | SHA-256（前 16 位） |
 |---|---|---|---|
-| 11.9 | [`dist/dsh-mobile-11.9.apk`](dist/dsh-mobile-11.9.apk) | 417.4 KB | `6A376D8A930095AC` |
+| 12.0 | [`dist/dsh-mobile-12.0.apk`](dist/dsh-mobile-12.0.apk) | 417.4 KB | `BADAA66B21E0DBE6` |
 
 APK 是自签名应用，覆盖安装即可升级（签名指纹见文末），**配对状态保留**。
 
@@ -78,8 +78,9 @@ APK 是自签名应用，覆盖安装即可升级（签名指纹见文末），*
 | `POST /m/api/pair-request` | 手机请求配对（只带设备名，不含任何凭据；有频率限制） |
 | `GET /m/api/pair-request/status?id=…` | 手机轮询批准结果（凭随机 id；链接只交付一次） |
 | `GET/POST /m/api/pair-requests` | 面板查询待批准请求 / 批准或拒绝（**仅本机可调**） |
-| `GET /m/api/status` | 隧道状态、设备数、**监听端口**等 |
+| `GET /m/api/status` | 隧道状态、设备数、**监听端口**、Tailscale 地址等 |
 | `GET /m/api/session` | 当前设备会话信息 |
+| `GET /m/api/launch-url` | **签发启动 URL**（凭设备 cookie）——见下方「为什么每次加载都要换令牌」 |
 | `POST /m/api/tunnel` | 隧道控制（仅本机可调） |
 | `DELETE /m/api/devices` | 撤销全部已配对设备（仅本机可调） |
 
@@ -136,6 +137,32 @@ APK 是自签名应用，覆盖安装即可升级（签名指纹见文末），*
 > Tailscale 的 Android 版**不提供任何查询接口**（没有导出的 Provider 或 Service，
 > 实测确认），所以 App **读不出**电脑地址，只能由宿主告诉自己。跳转的用途是去开开关，
 > 不是去取地址。
+
+### 为什么每次加载都要换令牌
+
+这一条差点让我们以为"配对成功了但界面没出来"，值得单独讲：
+
+**宿主是用 URL 里的启动令牌认证网页的，不是靠会话 cookie。** 实测：即使手上有一个
+对该 origin 完全有效的会话 cookie，`GET /` 依然返回
+`dsh web authentication required; reopen the URL printed by dsh web`。
+
+而 App 原来**只在配对那一刻**用了令牌，之后每次启动都加载裸地址，于是：
+
+```
+页面回来了（61 KB），但 __dshBoot 是 undefined
+→ 前端引导没注入 → app shell 不启动
+→ 屏幕上只剩几个插件挂件（记账条、可信模式徽章）
+```
+
+**还有一层**：会话 cookie 是**按 host 隔离**的。走 Tailscale 时用的是 `100.x` 或
+MagicDNS 名，而 cookie 是在局域网地址那个 host 上设的 —— 换个地址就不带了。
+
+所以插件新增了 `GET /m/api/launch-url`：**用请求自己的 origin** 调
+`ctx.connection.authenticatedUrl()`，返回一条带新令牌的 URL。App 每次加载前先取它。
+
+* **必须用请求的 origin**：给局域网地址签的令牌在外面没用（它设的 cookie 只认那个 host）。
+* **必须凭设备 cookie 把关**：签发启动令牌等于发会话，开放接口会比它修的那个 bug 更糟。
+  没 cookie 就 403，App 回退到完整配对流程。
 
 ### 2. 日常使用
 
