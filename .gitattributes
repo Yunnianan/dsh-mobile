@@ -1,0 +1,17 @@
+# Normalise line endings, so a clone on Windows does not rewrite every file.
+#
+# Without this, Git's autocrlf setting converts LF to CRLF in the working tree, and every file shows
+# as modified the moment Git touches it — which makes a real change impossible to spot in a diff.
+# These files are read by Node on every platform; LF is the form that behaves identically.
+* text=auto eol=lf
+
+# Binary: never normalise, never diff as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.apk binary
+*.jar binary
+*.idsig binary
+*.jks binary
+*.keystore binary

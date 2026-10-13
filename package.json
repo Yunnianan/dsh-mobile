@@ -22,7 +22,7 @@
     }
   },
   "scripts": {
-    "test": "node test/selftest.mjs && node test/integration.mjs && node test/origin-check.mjs && node test/widget-edge-test.cjs && node test/panel-geometry-test.cjs && node test/diag-selfcheck.cjs"
+    "test": "node test/selftest.mjs && node test/image-decode-test.cjs && node test/integration.mjs && node test/origin-check.mjs && node test/widget-edge-test.cjs && node test/panel-geometry-test.cjs && node test/diag-selfcheck.cjs"
   },
   "engines": {
     "node": ">=18"
