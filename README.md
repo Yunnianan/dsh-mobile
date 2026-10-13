@@ -23,7 +23,7 @@ SHA-256 见 [Tailscale APK 镜像说明](features/TAILSCALE-APK.md)。
 
 | 版本 | 文件 | 大小 | SHA-256（前 16 位） |
 |---|---|---|---|
-| 14.9 | [`dist/dsh-mobile-14.9.apk`](dist/dsh-mobile-14.9.apk) | 425.7 KB | `4A684DBE0F1983CD` |
+| 15.9 | [`dist/dsh-mobile-15.9.apk`](dist/dsh-mobile-15.9.apk) | 425.7 KB | `971AEB3110ADD7B5` |
 
 APK 是自签名应用，覆盖安装即可升级（签名指纹见文末），**配对状态保留**。
 
