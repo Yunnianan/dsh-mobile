@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const require = createRequire(import.meta.url);
-const plugin = await import('./lib/index.js');
+const plugin = await import('../lib/index.js');
 
 let failures = 0;
 const check = (label, ok, extra = '') => {
@@ -110,10 +110,18 @@ check('mint reports a link', Boolean(minted?.link), String(minted?.link));
 check('mint reports a LAN url', Boolean(minted?.lanUrl), String(minted?.lanUrl));
 check('mint reports a LAN link', Boolean(minted?.lanLink), String(minted?.lanLink));
 if (minted?.lanLink) {
-  // lanLink must always carry the LAN host specifically; the primary `link` is a
-  // separate field and now prefers Tailscale.
-  check('LAN link uses the LAN host', minted.lanLink.includes('192.168.'),
-        minted.lanLink.replace(/\?.*$/, ''));
+  // Assert the relationship, not a literal address.
+  //
+  // The old assertion required the text `192.168.` to appear. That holds on this machine and fails
+  // on any machine whose Wi-Fi is not on a 192.168 subnet — and it also passed for a *wrong*
+  // address as long as it looked private (a TAP adapter's 10.10.10.88 did). What actually matters
+  // is that the LAN link is built from the address the plugin reported as its LAN url.
+  check('LAN link is built from the reported LAN url',
+        Boolean(minted.lanUrl) && minted.lanLink.startsWith(minted.lanUrl),
+        `${minted.lanLink.replace(/\?.*$/, '')} vs lanUrl=${minted.lanUrl}`);
+  check('the reported LAN url is a private address',
+        /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(String(minted.lanUrl ?? '').replace(/^https?:\/\//, '')),
+        String(minted.lanUrl));
 }
 check('mint reports a scope', Boolean(minted?.scope), String(minted?.scope));
 // The scanned code must carry the auto-pair key: that is what lets a phone configure
