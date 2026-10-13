@@ -1,0 +1,41 @@
+{
+  "name": "dsh-mobile-public",
+  "version": "0.2.0",
+  "description": "在手机上直接用 DSH：配对面板与二维码、一次性令牌与长期密钥、已配对设备门控，以及可选的公网隧道。 · Use the DSH Web GUI from a phone: a pairing panel, one-time tokens with a long-lived key, a paired-device gate, and an optional public tunnel.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "lib",
+    "install.mjs",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "test": "node test/selftest.mjs && node test/integration.mjs && node test/origin-check.mjs && node test/widget-edge-test.cjs && node test/panel-geometry-test.cjs && node test/diag-selfcheck.cjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "remote",
+    "mobile",
+    "pairing",
+    "qr",
+    "tunnel"
+  ],
+  "license": "MIT"
+}

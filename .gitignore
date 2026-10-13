@@ -1,0 +1,16 @@
+# 依赖与锁文件（本仓库不需要 npm install：插件无第三方依赖）
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# 编辑器与系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 临时与日志
+*.log
+*.tmp
