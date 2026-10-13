@@ -13,7 +13,24 @@ import os
 import sys
 import zipfile
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+def find_root():
+    """The workspace root, found by looking for the folders this tool reads.
+
+    Same reasoning as in `stage-delivery.py`: a fixed `dirname(dirname(__file__))` is wrong in the copy
+    that ships inside `repo/tools/`, where it resolves to `repo/` and every path below it is missing.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(4):
+        if os.path.isdir(os.path.join(here, 'apk')) and os.path.isdir(os.path.join(here, 'repo')):
+            return here
+        parent = os.path.dirname(here)
+        if parent == here:
+            break
+        here = parent
+    raise SystemExit('cannot find the dsh-mobile workspace above %s' % os.path.abspath(__file__))
+
+
+ROOT = find_root()
 REPO = os.path.join(ROOT, 'repo')
 OUT = os.path.join(ROOT, 'out')
 FULL = os.path.join(os.path.dirname(ROOT), 'dsh-mobile-full-stage')

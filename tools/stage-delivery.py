@@ -20,7 +20,27 @@ import shutil
 import sys
 import zipfile
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+def find_root():
+    """The workspace root, found by looking for the folders this tool operates on.
+
+    Not `dirname(dirname(__file__))`: that assumes one fixed depth, and this file lives in two places —
+    `dsh-mobile/tools/` (two levels up is right) and the delivery copy at `dsh-mobile/repo/tools/`
+    (where two levels up is `repo/`, so the first run from there failed with
+    `FileNotFoundError: ...\\dsh-mobile\\out`). Walking up until the expected folders appear works from
+    either location.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(4):
+        if os.path.isdir(os.path.join(here, 'apk')) and os.path.isdir(os.path.join(here, 'repo')):
+            return here
+        parent = os.path.dirname(here)
+        if parent == here:
+            break
+        here = parent
+    raise SystemExit('cannot find the dsh-mobile workspace above %s' % os.path.abspath(__file__))
+
+
+ROOT = find_root()
 STAGE = os.path.join(ROOT, '_zipstage')
 REPO = os.path.join(ROOT, 'repo')
 OUT = os.path.join(ROOT, 'out')
