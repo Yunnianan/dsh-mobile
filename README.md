@@ -7,18 +7,43 @@
 
 ---
 
+## 先装哪个？
+
+| 你是… | 从这里开始 |
+|---|---|
+| 只想用起来 | **[快速开始](features/QUICKSTART.md)**（三步） |
+| 想搞清原理 / 排错 | **[安装指南](features/INSTALL.md)**（完整版，含 Tailscale 与常见问题） |
+| 想改代码 | 下面的[安装](#安装)与[测试](#测试) |
+
+**手机端 APK**：从 [`dist/`](dist) 取最新版本，或看 [Releases](../../releases)。
+
+| 版本 | 文件 | 大小 | SHA-256（前 16 位） |
+|---|---|---|---|
+| 9.0 | [`dist/dsh-mobile-9.0.apk`](dist/dsh-mobile-9.0.apk) | 401.5 KB | `F6A16C584B8EE80C` |
+
+APK 是自签名应用，覆盖安装即可升级（签名指纹见文末），**配对状态保留**。
+
+---
+
 ## 这个仓库包含什么
 
-| 文件 | 说明 |
+| 路径 | 说明 |
 |---|---|
 | `lib/index.js` | 插件本体：配对面板、QR 生成、一次性令牌、设备门控、隧道托管 |
 | `lib/widget.js` | 手机端配对面板（浏览器侧，贴在桌面 DSH 左下角） |
 | `lib/qr.js` | 手机端 QR 渲染 |
 | `lib/qr-vendor/` | 内置的 QR 编码器（MIT，来自 `qrcode`，见 `LICENSE-qrcode`） |
 | `cordis.patch.yml` | 插件自带的补丁层 |
+| `install.mjs` | 一键安装（声明依赖 + 加进 bundles + 建联接） |
+| `dist/` | 编译好的 Android 客户端 APK |
+| `features/` | [快速开始](features/QUICKSTART.md) 与 [安装指南](features/INSTALL.md) |
 | `test/` | 全部测试与量测脚本（不需要网络） |
+| `github-upload.mjs` | 用 REST API 把本目录上传到 GitHub（不需要装 git） |
 
-APK 与图文教程不在这个仓库里（它们随发布包分发）。
+`dist/` 里的 APK 是在本仓库之外构建的：安卓客户端是一份独立的 Java 源码
+（无第三方框架，只依赖 vendored 的 `zxing-core`），构建脚本为
+`aapt2 → javac → d8 → zipalign → apksigner`，不依赖 Gradle。编译好的产物按版本放进
+`dist/`，源码本身暂未纳入本仓库。
 
 ---
 
